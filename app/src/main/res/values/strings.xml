@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">APIsDemo</string>
     <string name="title">API List</string>
+    <string name="no_network">Network Not Available</string>
 </resources>
