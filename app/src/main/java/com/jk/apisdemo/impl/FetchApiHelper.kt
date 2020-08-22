@@ -11,6 +11,11 @@ import com.jk.apisdemo.event.OnAPIsUpdate
 import com.jk.apisdemo.model.Api
 import com.jk.apisdemo.model.ApiLog
 import com.jk.apisdemo.service.ApiService
+import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
+import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.functions.Consumer
+import io.reactivex.schedulers.Schedulers
 import org.greenrobot.eventbus.EventBus
 import java.lang.reflect.Type
 import java.util.*
@@ -23,19 +28,25 @@ class FetchApiHelper {
         private const val INTERVAL = 5000L
     }
 
+    interface OnFetchLogsCallback {
+        fun OnFetchLogs(logs: ArrayList<ApiLog>)
+    }
+
     var activity: Activity? = null
     var timer: Timer? = null
     var task: TimerTask? = null
     var dbHelper: LogDbHelper? = null
-
+    var disposable: CompositeDisposable? = null
 
     constructor(activity: Activity) {
         this.activity = activity
         dbHelper = LogDbHelper(activity)
+        disposable = CompositeDisposable()
     }
 
     fun onDestroy() {
         dbHelper?.close()
+        disposable?.dispose()
     }
 
     fun startFetching() {
@@ -75,14 +86,57 @@ class FetchApiHelper {
     }
 
     fun restoreLastLog() {
-        val logs = queryLog(true)
-        if (logs.isNotEmpty()) {
-            val list = logs.get(0).response?.let { parseResponse(it) }
-            EventBus.getDefault().post(list?.let { OnAPIsUpdate(it) })
+        val observable = Observable.create<ArrayList<ApiLog>> { emitter ->
+            val logs = queryLogSync(true)
+            emitter.onNext(logs)
         }
+
+        val consumer = Consumer<ArrayList<ApiLog>> { logs ->
+            if (logs.isNotEmpty()) {
+                val list = logs.get(0).response?.let { parseResponse(it) }
+                EventBus.getDefault().post(list?.let { OnAPIsUpdate(it) })
+            }
+        }
+
+        val disp = observable.subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(consumer)
+        disposable?.add(disp)
+    }
+
+    fun fetchAllLogs(cb: OnFetchLogsCallback) {
+        val observable = Observable.create<ArrayList<ApiLog>> { emitter ->
+            val logs = queryLogSync(false)
+            emitter.onNext(logs)
+        }
+
+        val consumer = Consumer<ArrayList<ApiLog>> { logs ->
+            if (logs.isNotEmpty()) {
+                cb.OnFetchLogs(logs)
+            }
+        }
+
+        val disp = observable.subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(consumer)
+        disposable?.add(disp)
     }
 
     fun insertLog(status: Int, response: String) {
+        val observable = Observable.create<Long> { emitter ->
+            val rowId = insertLogSync(status, response)
+            emitter.onNext(rowId)
+        }
+
+        val consumer = Consumer<Long> { _ -> }
+
+        val disp = observable.subscribeOn(Schedulers.io())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(consumer)
+        disposable?.add(disp)
+    }
+
+    fun insertLogSync(status: Int, response: String): Long {
         val time = System.currentTimeMillis()
         val values = ContentValues().apply {
             put(LogDbHelper.COLUMN_NAME_STATUS, status)
@@ -91,22 +145,25 @@ class FetchApiHelper {
         }
 
         val db = dbHelper!!.writableDatabase
-        db?.insert(LogDbHelper.TABLE_NAME, null, values)
+        val rowId = db?.insert(LogDbHelper.TABLE_NAME, null, values)
         db.close()
+        return rowId ?: -1
     }
 
-    fun queryLog(onlyLast: Boolean): ArrayList<ApiLog> {
+    fun queryLogSync(onlyLast: Boolean): ArrayList<ApiLog> {
         val projection = arrayOf(
             LogDbHelper.COLUMN_NAME_STATUS,
             LogDbHelper.COLUMN_NAME_RESPONSE, LogDbHelper.COLUMN_NAME_DATE
         )
+        val selection = if (onlyLast) "${LogDbHelper.COLUMN_NAME_STATUS} = ?" else null
+        val selectionArgs = if (onlyLast) arrayOf("${LogDbHelper.STATUS_OK}") else null
         val sortOrder = "${LogDbHelper.COLUMN_NAME_DATE} DESC"
-        val limit = if (onlyLast) "1" else null
+        val limit = if (onlyLast) "1" else "100"
 
         val db = dbHelper!!.readableDatabase
         val cursor = db.query(
-            LogDbHelper.TABLE_NAME, projection, null,
-            null, null, null, sortOrder, limit
+            LogDbHelper.TABLE_NAME, projection, selection,
+            selectionArgs, null, null, sortOrder, limit
         )
 
         val list = ArrayList<ApiLog>()
