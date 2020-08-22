@@ -7,6 +7,7 @@ import android.util.Log
 import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.Response
+import com.android.volley.VolleyError
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.jk.apisdemo.App
@@ -16,6 +17,7 @@ import com.jk.apisdemo.extended.toast
 class ApiService private constructor() {
     interface OnAPIsCallback {
         fun onFetchSucc(response: String)
+        fun onFetchFail(error: VolleyError)
     }
 
     companion object {
@@ -51,7 +53,7 @@ class ApiService private constructor() {
                 cb.onFetchSucc(response)
             },
             Response.ErrorListener { error ->
-                Log.d(TAG, error.message)
+                cb.onFetchFail(error)
             })
 
         stringRequest.tag = TAG
