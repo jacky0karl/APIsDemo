@@ -44,6 +44,7 @@ class ApiService private constructor() {
             return
         }
 
+        App.context.toast(R.string.fetching)
         val stringRequest = StringRequest(
             Request.Method.GET, Companion.URL,
             Response.Listener<String> { response ->
