@@ -1,9 +1,7 @@
 package com.jk.apisdemo.impl
 
-import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
-
 import android.database.sqlite.SQLiteOpenHelper
 import android.provider.BaseColumns
 
@@ -16,9 +14,6 @@ class LogDbHelper(context: Context) :
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-    }
-
-    override fun onDowngrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
     }
 
     companion object {

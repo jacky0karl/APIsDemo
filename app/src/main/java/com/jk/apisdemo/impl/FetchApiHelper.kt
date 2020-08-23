@@ -35,17 +35,16 @@ class FetchApiHelper {
     var activity: Activity? = null
     var timer: Timer? = null
     var task: TimerTask? = null
-    var dbHelper: LogDbHelper? = null
+    var dbServer: LogDbServer = LogDbServer()
     var disposable: CompositeDisposable? = null
 
     constructor(activity: Activity) {
         this.activity = activity
-        dbHelper = LogDbHelper(activity)
         disposable = CompositeDisposable()
     }
 
     fun onDestroy() {
-        dbHelper?.close()
+        dbServer.onDestroy()
         disposable?.dispose()
     }
 
@@ -87,7 +86,7 @@ class FetchApiHelper {
 
     fun restoreLastLog() {
         val observable = Observable.create<ArrayList<ApiLog>> { emitter ->
-            val logs = queryLogSync(true)
+            val logs = dbServer.query(true)
             emitter.onNext(logs)
         }
 
@@ -106,7 +105,7 @@ class FetchApiHelper {
 
     fun fetchAllLogs(cb: OnFetchLogsCallback) {
         val observable = Observable.create<ArrayList<ApiLog>> { emitter ->
-            val logs = queryLogSync(false)
+            val logs = dbServer.query(false)
             emitter.onNext(logs)
         }
 
@@ -124,7 +123,7 @@ class FetchApiHelper {
 
     fun insertLog(status: Int, response: String) {
         val observable = Observable.create<Long> { emitter ->
-            val rowId = insertLogSync(status, response)
+            val rowId = dbServer.insert(status, response)
             emitter.onNext(rowId)
         }
 
@@ -135,53 +134,6 @@ class FetchApiHelper {
             .subscribe(consumer)
         disposable?.add(disp)
     }
-
-    fun insertLogSync(status: Int, response: String): Long {
-        val time = System.currentTimeMillis()
-        val values = ContentValues().apply {
-            put(LogDbHelper.COLUMN_NAME_STATUS, status)
-            put(LogDbHelper.COLUMN_NAME_RESPONSE, response)
-            put(LogDbHelper.COLUMN_NAME_DATE, time)
-        }
-
-        val db = dbHelper!!.writableDatabase
-        val rowId = db?.insert(LogDbHelper.TABLE_NAME, null, values)
-        db.close()
-        return rowId ?: -1
-    }
-
-    fun queryLogSync(onlyLast: Boolean): ArrayList<ApiLog> {
-        val projection = arrayOf(
-            LogDbHelper.COLUMN_NAME_STATUS,
-            LogDbHelper.COLUMN_NAME_RESPONSE, LogDbHelper.COLUMN_NAME_DATE
-        )
-        val selection = if (onlyLast) "${LogDbHelper.COLUMN_NAME_STATUS} = ?" else null
-        val selectionArgs = if (onlyLast) arrayOf("${LogDbHelper.STATUS_OK}") else null
-        val sortOrder = "${LogDbHelper.COLUMN_NAME_DATE} DESC"
-        val limit = if (onlyLast) "1" else "100"
-
-        val db = dbHelper!!.readableDatabase
-        val cursor = db.query(
-            LogDbHelper.TABLE_NAME, projection, selection,
-            selectionArgs, null, null, sortOrder, limit
-        )
-
-        val list = ArrayList<ApiLog>()
-        with(cursor) {
-            while (moveToNext()) {
-                val status = getInt(getColumnIndexOrThrow(LogDbHelper.COLUMN_NAME_STATUS))
-                val response = getString(getColumnIndexOrThrow(LogDbHelper.COLUMN_NAME_RESPONSE))
-                val date = getLong(getColumnIndexOrThrow(LogDbHelper.COLUMN_NAME_DATE))
-                val log = ApiLog(status, response, date)
-                list.add(log)
-            }
-            close()
-        }
-
-        db.close()
-        return list
-    }
-
 
     fun parseResponse(response: String): ArrayList<Api> {
         val list: ArrayList<Api> = ArrayList<Api>()

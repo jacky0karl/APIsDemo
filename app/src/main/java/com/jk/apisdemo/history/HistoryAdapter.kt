@@ -53,7 +53,7 @@ class HistoryAdapter(activity: Activity) : RecyclerView.Adapter<HistoryAdapter.V
         }
     }
 
-    fun showDetail(response: String) {
+   private fun showDetail(response: String) {
         val builder: AlertDialog.Builder? = activity?.let {
             AlertDialog.Builder(it)
         }
