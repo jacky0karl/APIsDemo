@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">APIsDemo</string>
+    <string name="app_name">APIs Demo</string>
     <string name="title">API List</string>
     <string name="no_network">Network Not Available</string>
     <string name="fetching">Fetching&#8230;</string>
