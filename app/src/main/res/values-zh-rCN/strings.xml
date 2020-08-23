@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">接口例子</string>
+    <string name="title">接口列表</string>
+    <string name="no_network">网络不可用</string>
+    <string name="fetching">拉取中&#8230;</string>
+    <string name="history">历史日志</string>
+    <string name="detail">查看详情</string>
+    <string name="ok">确定</string>
+    <string name="fetching_ok">拉取接口成功</string>
+    <string name="fetching_nok">拉取接口失败</string>
+</resources>
