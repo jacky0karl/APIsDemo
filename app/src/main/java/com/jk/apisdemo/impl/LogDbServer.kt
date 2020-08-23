@@ -1,15 +1,16 @@
 package com.jk.apisdemo.impl
 
 import android.content.ContentValues
+import android.content.Context
 import com.jk.apisdemo.App
 import com.jk.apisdemo.model.ApiLog
 
-class LogDbServer {
+class LogDbServer(context: Context) {
 
     private var dbHelper: LogDbHelper? = null
 
     init {
-        dbHelper = LogDbHelper(App.context)
+        dbHelper = LogDbHelper(context)
     }
 
     fun onDestroy() {
