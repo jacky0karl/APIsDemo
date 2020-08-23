@@ -3,5 +3,9 @@
     <string name="title">API List</string>
     <string name="no_network">Network Not Available</string>
     <string name="fetching">Fetching&#8230;</string>
-
+    <string name="history">Log History</string>
+    <string name="detail">See Detail</string>
+    <string name="ok">OK</string>
+    <string name="fetching_ok">Fetching APIs Successful</string>
+    <string name="fetching_nok">Fetching APIs Failed</string>
 </resources>

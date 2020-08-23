@@ -1,90 +1,63 @@
-package com.jk.apisdemo.main
+package com.jk.apisdemo.history
 
-import android.content.Intent
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
+import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.android.volley.VolleyError
 import com.jk.apisdemo.R
 import com.jk.apisdemo.event.OnAPIsUpdate
-import com.jk.apisdemo.history.HistoryActivity
 import com.jk.apisdemo.impl.FetchApiHelper
+import com.jk.apisdemo.impl.LogDbHelper
+import com.jk.apisdemo.model.ApiLog
+import com.jk.apisdemo.service.ApiService
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 
 
-class MainActivity : AppCompatActivity() {
+class HistoryActivity : AppCompatActivity() {
     private var apiHelper: FetchApiHelper? = null
     private var recyclerView: RecyclerView? = null
-    private var apisAdapter: ApisAdapter? = null
-
+    private var historyAdapter: HistoryAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        EventBus.getDefault().register(this)
         initView()
     }
 
     private fun initView() {
         setSupportActionBar(findViewById(R.id.toolbar))
-        supportActionBar?.setTitle(R.string.title)
-        setupRecyclerView()
+        supportActionBar?.setTitle(R.string.history)
         apiHelper = FetchApiHelper(this)
-        apiHelper?.restoreLastLog()
+        setupRecyclerView()
     }
 
     private fun setupRecyclerView() {
         val layoutManager = LinearLayoutManager(this)
         layoutManager.orientation = RecyclerView.VERTICAL
         val decoration = DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
-        apisAdapter = ApisAdapter()
+        historyAdapter = HistoryAdapter(this)
 
         recyclerView = findViewById(R.id.recyclerView)
         recyclerView?.layoutManager = layoutManager
         recyclerView!!.addItemDecoration(decoration)
-        recyclerView?.adapter = apisAdapter
-    }
+        recyclerView?.adapter = historyAdapter
 
-    override fun onResume() {
-        super.onResume()
-        apiHelper?.startFetching()
-    }
-
-    override fun onPause() {
-        super.onPause()
-        apiHelper?.stopFetching()
+        val cb = object : FetchApiHelper.OnFetchLogsCallback {
+            override fun OnFetchLogs(logs: ArrayList<ApiLog>) {
+                historyAdapter?.setData(logs)
+            }
+        }
+        apiHelper?.fetchAllLogs(cb)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        EventBus.getDefault().unregister(this)
         apiHelper?.onDestroy()
-    }
-
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onMessageEvent(event: OnAPIsUpdate?) {
-        apisAdapter?.setData(event?.apis)
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_history -> {
-                val intent = Intent(this, HistoryActivity::class.java)
-                startActivity(intent)
-                return true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
     }
 
 }
