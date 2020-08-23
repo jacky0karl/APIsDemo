@@ -28,6 +28,13 @@
             android:name=".history.HistoryActivity"
             android:theme="@style/AppTheme.NoActionBar" />
 
+        <uses-library android:name="android.test.runner" />
+
     </application>
+
+    <instrumentation
+        android:name="android.test.InstrumentationTestRunner"
+        android:label="Tests for ApisDemo"
+        android:targetPackage="com.jk.apisdemo" />
 
 </manifest>

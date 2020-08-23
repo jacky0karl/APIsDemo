@@ -7,6 +7,7 @@ import com.android.volley.VolleyError
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException
 import com.google.gson.reflect.TypeToken
+import com.jk.apisdemo.App
 import com.jk.apisdemo.event.OnAPIsUpdate
 import com.jk.apisdemo.model.Api
 import com.jk.apisdemo.model.ApiLog
@@ -35,7 +36,7 @@ class FetchApiHelper {
     var activity: Activity? = null
     var timer: Timer? = null
     var task: TimerTask? = null
-    var dbServer: LogDbServer = LogDbServer()
+    var dbServer: LogDbServer = LogDbServer(App.context)
     var disposable: CompositeDisposable? = null
 
     constructor(activity: Activity) {
